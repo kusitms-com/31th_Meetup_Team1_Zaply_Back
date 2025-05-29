@@ -29,7 +29,8 @@
 <br></br>
 
 ## 📅 ERD
-<img width="1092" alt="스크린샷 2025-05-29 오후 9 35 28" src="https://github.com/user-attachments/assets/d1035e6d-0bd8-43ad-a944-c4053a3f85d0" />
+<img width="1078" alt="스크린샷 2025-05-29 오후 11 37 30" src="https://github.com/user-attachments/assets/9abfe4c6-8260-4d38-b950-ed381c712d0f" />
+
 
 <br></br>
 
