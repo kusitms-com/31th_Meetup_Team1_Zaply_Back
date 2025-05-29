@@ -1,0 +1,52 @@
+name: CD to NCP (EC2)
+
+on:
+  # CI가 성공적으로 종료된 이후에만 실행
+  workflow_run:
+    workflows: ["CI Pipeline with Docker Hub"]
+    types: [completed]
+
+jobs:
+  deploy:
+    # develop 브랜치에 대한 CI가 success 일 때만
+    if: ${{ github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'develop' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 리포지토리 체크아웃
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2. SSH 키 준비
+      - name: Prepare SSH key
+        env:
+          NCP_PEM_KEY: ${{ secrets.NCP_PEM_KEY }}
+        run: |
+          echo "$NCP_PEM_KEY" > ncp_key.pem
+          chmod 400 ncp_key.pem
+
+      # 3. NCP로 배포
+      - name: Deploy to NCP
+        env:
+          NCP_PEM_KEY: ${{ secrets.NCP_PEM_KEY }}
+          NCP_HOST: ${{ secrets.NCP_HOST }}
+          NCP_USER: ${{ secrets.NCP_USER }}
+          NCP_PASS:    ${{ secrets.NCP_PASSWORD }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        run: |
+          ssh -i ncp_key.pem -o StrictHostKeyChecking=no $NCP_USER@$NCP_HOST << EOF
+          
+            # 기존 컨테이너 중지 및 삭제
+            docker stop zaply || true
+            docker rm zaply || true
+          
+            # 도커 허브에서 이미지 풀
+            docker pull $DOCKER_USERNAME/zaply:latest
+          
+            # 컨테이너 실행
+            docker run -d --name zaply --network root_zaply_network -p 8080:8080 $DOCKER_USERNAME/zaply:latest
+            docker network connect monitoring_loki-net zaply
+          EOF
+          
+          rm ncp_key.pem
